@@ -1,23 +1,34 @@
 const amqp = require("amqplib");
+const config = require("../config");
 
 class MessageBroker {
   constructor() {
     this.channel = null;
+    this.connection = null;
+    this.retryInterval = 5000; // 5 giây
   }
 
   async connect() {
     console.log("Connecting to RabbitMQ...");
 
-    setTimeout(async () => {
+    while (!this.channel) {
       try {
-        const connection = await amqp.connect("amqp://localhost:5672");
-        this.channel = await connection.createChannel();
-        await this.channel.assertQueue("products");
-        console.log("RabbitMQ connected");
+        this.connection = await amqp.connect(config.rabbitMQURI);
+        this.channel = await this.connection.createChannel();
+        await this.channel.assertQueue(config.queueName);
+        console.log("✅ RabbitMQ connected");
       } catch (err) {
-        console.error("Failed to connect to RabbitMQ:", err.message);
+        console.error(
+          `Failed to connect to RabbitMQ: ${err.message}. Retrying in ${this.retryInterval /
+            1000}s...`
+        );
+        await this.sleep(this.retryInterval);
       }
-    }, 100); // delay 10 seconds to wait for RabbitMQ to start
+    }
+  }
+
+  sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async publishMessage(queue, message) {
@@ -27,12 +38,10 @@ class MessageBroker {
     }
 
     try {
-      await this.channel.sendToQueue(
-        queue,
-        Buffer.from(JSON.stringify(message))
-      );
+      await this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
+      console.log(`Message published to queue "${queue}"`);
     } catch (err) {
-      console.log(err);
+      console.error("Failed to publish message:", err.message);
     }
   }
 
@@ -44,14 +53,23 @@ class MessageBroker {
 
     try {
       await this.channel.consume(queue, (message) => {
-        const content = message.content.toString();
-        const parsedContent = JSON.parse(content);
-        callback(parsedContent);
-        this.channel.ack(message);
+        if (message) {
+          const content = message.content.toString();
+          const parsedContent = JSON.parse(content);
+          callback(parsedContent);
+          this.channel.ack(message);
+        }
       });
+      console.log(`Started consuming messages from queue "${queue}"`);
     } catch (err) {
-      console.log(err);
+      console.error("Failed to consume messages:", err.message);
     }
+  }
+
+  async disconnect() {
+    if (this.channel) await this.channel.close();
+    if (this.connection) await this.connection.close();
+    console.log("RabbitMQ disconnected");
   }
 }
 

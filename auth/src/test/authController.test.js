@@ -13,13 +13,13 @@ describe("User Authentication", () => {
   before(async () => {
     app = new App();
     await app.connectDB();
-    app.start();
+    // Start on an ephemeral port to avoid conflicts
+    app.start(0);
   });
 
   after(async () => {
     await app.authController.authService.deleteTestUsers();
-    await app.disconnectDB();
-    app.stop();
+    await app.stop();
   });
 
   describe("POST /register", () => {

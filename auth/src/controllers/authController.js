@@ -11,8 +11,7 @@ class AuthController {
 
   async login(req, res) {
     const { username, password } = req.body;
-    console.log("Login attempt for user:", username); 
-    console.log("Password provided:", password);
+
     const result = await this.authService.login(username, password);
 
     if (result.success) {

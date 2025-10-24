@@ -1,158 +1,495 @@
-# EProject Phase 1 — Microservices with RabbitMQ and API Gateway
+# 🛍️ E-COMMERCE MICROSERVICES PROJECT
 
-## Giới thiệu
-
-Dự án **EProject Phase 1** là hệ thống thương mại điện tử được thiết kế theo kiến trúc **Microservices**.
-Các thành phần chính bao gồm:
-
-- **API Gateway**: điều phối các yêu cầu đến đúng service.
-- **RabbitMQ**: trung gian giao tiếp giữa các service.
-- **User Service**, **Product Service**, **Order Service**: chịu trách nhiệm xử lý nghiệp vụ riêng biệt.
+**Sinh viên:** Nguyễn Ngọc Hồng Linh  
+**MSSV:** 22649491  
+**Project:** Hệ thống E-Commerce với Microservices Architecture
 
 ---
 
-##  1. Cài đặt môi trường
+## 📋 Mục lục
 
-### **Yêu cầu hệ thống**
-
-- Node.js (v18+)
-- Docker Desktop
-- Postman (để test API)
-- Git
+1. [Tổng quan](#tổng-quan)
+2. [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
+3. [Công nghệ sử dụng](#công-nghệ-sử-dụng)
+4. [Cài đặt](#cài-đặt)
+5. [Chạy project](#chạy-project)
+6. [Test với Postman](#test-với-postman)
+7. [API Documentation](#api-documentation)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
-## 2. Cài đặt RabbitMQ qua Docker
+## 🎯 Tổng quan
 
-### **Chạy lệnh sau để khởi tạo container RabbitMQ**
+Đây là hệ thống E-Commerce được xây dựng theo **Microservices Architecture**, bao gồm:
 
-```bash
-docker run -d --name rabbitmq \
- -p 5672:5672 -p 15672:15672 \
- rabbitmq:4-management
+- **Auth Service** - Quản lý xác thực người dùng (JWT)
+- **Product Service** - Quản lý sản phẩm
+- **Order Service** - Xử lý đơn hàng qua RabbitMQ
+- **API Gateway** - Single entry point cho toàn hệ thống
+
+---
+
+## 🏗️ Kiến trúc hệ thống
+
+```
+┌─────────────┐
+│   Client    │
+│  (Postman)  │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────────────────────────────┐
+│         API Gateway (Port 3003)         │
+│     (Optional - Direct access OK)       │
+└────────┬──────────────┬─────────────────┘
+         │              │
+    ┌────▼────┐    ┌────▼──────┐
+    │  Auth   │    │  Product  │
+    │ Service │    │  Service  │
+    │  :3000  │    │   :3001   │
+    └────┬────┘    └────┬──────┘
+         │              │
+         │         ┌────▼────────┐
+         │         │  RabbitMQ   │
+         │         │   :5672     │
+         │         └────┬────────┘
+         │              │
+         │         ┌────▼────┐
+         │         │  Order  │
+         │         │ Service │
+         │         │  :3002  │
+         ▼         └─────────┘
+    ┌─────────┐
+    │ MongoDB │
+    │ :27017  │
+    └─────────┘
 ```
 
-> ⚠️ **Lưu ý:**
->
-> - Truy cập giao diện quản trị tại: [http://localhost:15672](http://localhost:15672)
-> - Tài khoản mặc định: `guest` / `guest`
-> - Nếu muốn RabbitMQ hoạt động vĩnh viễn (không mất khi tắt máy), hãy thêm cờ volume:
->
-> ```bash
-> docker run -d --name rabbitmq \
-> -p 5672:5672 -p 15672:15672 \
-> -v rabbitmq_data:/var/lib/rabbitmq \
-> rabbitmq:4-management
-> ```
+---
 
-📷 _Ảnh minh họa:_ <img src="./public/asset/setuprabbitmq.png" width="700">
+## 💻 Công nghệ sử dụng
+
+### Backend
+- **Node.js** + **Express.js** - Web framework
+- **MongoDB** + **Mongoose** - Database
+- **RabbitMQ** (AMQP) - Message broker
+- **JWT** - Authentication
+- **Docker** + **Docker Compose** - Containerization
+
+### Testing
+- **Mocha** - Test framework
+- **Chai** - Assertion library
+- **Postman** - API testing
 
 ---
 
-## 3. Thiết lập các Microservices
+## 📦 Cài đặt
 
-### **Bước 1. Clone project**
+### Yêu cầu hệ thống
+- **Node.js** >= 14.x
+- **Docker Desktop** (for Windows/Mac) hoặc **Docker Engine** (for Linux)
+- **MongoDB** (hoặc dùng Docker)
+- **Postman** (để test API)
 
+### Bước 1: Clone project
 ```bash
-git clone <repository_url>
-cd EProject-Phase-1
+git clone https://github.com/HongLinh1103/22649491-NguyenNgochongLinh-EProject.git
+cd 22649491-NguyenNgochongLinh-EProject
 ```
 
-### **Bước 2. Cài đặt dependencies**
-
+### Bước 2: Install dependencies
 ```bash
+# Root dependencies
+npm install
+
+# Auth service
+cd auth
+npm install
+
+# Product service
+cd ../product
+npm install
+
+# Order service
+cd ../order
+npm install
+
+# API Gateway (optional)
+cd ../api-gateway
 npm install
 ```
 
-### **Bước 3. Cấu hình môi trường**
+### Bước 3: Cấu hình Environment Variables
 
-Tạo file `.env` cho từng service (ví dụ: `user-service`, `product-service`, `order-service`) với các biến:
+Đã có sẵn các file `.env` trong mỗi service:
 
+**auth/.env:**
 ```
-PORT=xxxx
-MONGO_URI=mongodb+srv://...
-RABBITMQ_URL=amqp://localhost
-JWT_SECRET=your_secret_key
+PORT=3000
+MONGODB_URI=mongodb://localhost:27017/authdb
+JWT_SECRET=supersecret
 ```
 
+**product/.env:**
+```
+PORT=3001
+MONGODB_URI=mongodb://localhost:27017/productdb
+RABBITMQ_URL=amqp://guest:guest@localhost:5672
+JWT_SECRET=supersecret
+```
 
+**order/.env:**
+```
+PORT=3002
+MONGODB_URI=mongodb://localhost:27017/orderdb
+RABBITMQ_URL=amqp://guest:guest@localhost:5672
+```
 
 ---
 
-## 4. Chạy toàn bộ hệ thống
+## 🚀 Chạy project
 
-Khởi động tất cả microservices (User, Product, Order, Gateway) bằng các lệnh riêng:
+### Cách 1: Sử dụng Script tự động (Khuyến nghị)
+
+**Windows:**
+```bash
+# Khởi động tất cả services
+start-all-services.bat
+
+# Dừng tất cả services
+stop-all-services.bat
+```
+
+### Cách 2: Chạy thủ công
+
+**Bước 1: Khởi động Docker**
+```bash
+docker-compose up -d
+```
+
+**Bước 2: Khởi động các services** (mỗi service một terminal)
 
 ```bash
-cd api-gateway && npm start
-cd user-service && npm start
-cd product-service && npm start
-cd order-service && npm start
+# Terminal 1 - Auth Service
+cd auth
+node index.js
+
+# Terminal 2 - Product Service
+cd product
+node index.js
+
+# Terminal 3 - Order Service
+cd order
+node index.js
+
+# Terminal 4 - API Gateway (optional)
+cd api-gateway
+node index.js
 ```
 
-API Gateway sẽ điều phối các request đến đúng service tương ứng.
-📷 _Ảnh minh họa:_ <img src="./public/asset/setupapigateway.png">
+### Kiểm tra services đang chạy
+
+```bash
+# Kiểm tra Docker containers
+docker ps
+
+# Kiểm tra Node.js processes (Windows)
+netstat -ano | findstr :3000
+netstat -ano | findstr :3001
+netstat -ano | findstr :3002
+```
 
 ---
 
-## 5. Kiểm thử chức năng với Postman
+## 🧪 Test với Postman
 
-### **1️. Đăng ký tài khoản**
+### Quick Start
 
-**POST** `/auth/register`
-📷 _Ảnh minh họa:_ <img src="./public/asset/register.png">
+1. **Import Postman Collection**
+   - Mở Postman
+   - Import file: `E-Commerce_Microservices.postman_collection.json`
 
-Kết quả trong database: <img src="./public/asset/databaseuser.png">
 
----
+3. **Test Flow cơ bản**
+   ```
+   Register → Login → Create Products → Get Products → Buy Products
+   ```
 
-### **2. Đăng nhập và nhận token**
+### Run Automated Tests
 
-**POST** `/auth/login`
-Sau khi đăng nhập thành công, hệ thống trả về **JWT Token**.
-📷 _Ảnh minh họa:_ <img src="./public/asset/login.png">
+```bash
+npm test
+```
 
-Token này được dùng để xác thực các request tiếp theo.
-
----
-
-### **3️. Thêm sản phẩm**
-
-**POST** `/product/add`
-Gửi token trong header `Authorization: Bearer <token>`
-
-📦 _Body ví dụ:_ <img src="./public/asset/bodyaddproduct.png">
-
-📷 _Kết quả trả về:_ <img src="./public/asset/ketquaaddproduct.png">
-
-📂 _Dữ liệu lưu trong database:_ <img src="./public/asset/databaseaddproduct.png">
+Kết quả mong đợi: **7 passing tests**
+- Auth Service: 5 tests
+- Product Service: 2 tests
 
 ---
 
-### **4. Tạo đơn hàng**
+## 📚 API Documentation
 
-**POST** `/order/create`
-Gửi token trong Headers và danh sách ID sản phẩm trong body:
+### Auth Service (Port 3000)
 
-📋 _Header:_
-`Authorization: Bearer <token>`
+#### POST /register
+Đăng ký tài khoản mới
+```json
+Request:
+{
+  "username": "honglinh",
+  "password": "password123"
+}
 
-📋 _Body:_ <img src="./public/asset/ids.png" width="600">
+Response (200):
+{
+  "_id": "...",
+  "username": "honglinh"
+}
+```
 
-📷 _Kết quả trả về:_ <img src="./public/asset/ketquadathang.png">
+#### POST /login
+Đăng nhập và nhận JWT token
+```json
+Request:
+{
+  "username": "honglinh",
+  "password": "password123"
+}
 
-📂 _Dữ liệu trong database:_ <img src="./public/asset/databaseorder.png">
+Response (200):
+{
+  "token": "eyJhbGc..."
+}
+```
+
+#### GET /dashboard
+Truy cập trang protected (cần token)
+```
+Headers:
+Authorization: Bearer <token>
+
+Response (200):
+{
+  "message": "Welcome to dashboard"
+}
+```
+
+### Product Service (Port 3001)
+
+#### POST /api/products
+Tạo sản phẩm mới (cần token)
+```json
+Headers:
+Authorization: Bearer <token>
+
+Request:
+{
+  "name": "iPhone 15 Pro Max",
+  "description": "Flagship smartphone",
+  "price": 1200
+}
+
+Response (201):
+{
+  "_id": "...",
+  "name": "iPhone 15 Pro Max",
+  "description": "Flagship smartphone",
+  "price": 1200
+}
+```
+
+#### GET /api/products
+Lấy danh sách sản phẩm (cần token)
+```
+Headers:
+Authorization: Bearer <token>
+
+Response (200):
+[
+  {
+    "_id": "...",
+    "name": "iPhone 15 Pro Max",
+    "price": 1200
+  }
+]
+```
+
+#### POST /api/products/buy
+Mua sản phẩm / Tạo đơn hàng (cần token)
+```json
+Headers:
+Authorization: Bearer <token>
+
+Request:
+{
+  "ids": ["product_id_1", "product_id_2"]
+}
+
+Response (201):
+{
+  "status": "completed",
+  "products": [...],
+  "username": "honglinh",
+  "totalPrice": 3700
+}
+```
 
 ---
 
-## 6. Kết quả đạt được
+## 🔧 Troubleshooting
 
-- Kết nối thành công giữa các microservice qua RabbitMQ.
-- API Gateway hoạt động đúng, định tuyến chính xác.
-- Chức năng đăng ký, đăng nhập, thêm sản phẩm, đặt hàng hoạt động ổn định.
-- Dữ liệu lưu trữ chính xác trong MongoDB.
+### Lỗi "ECONNREFUSED"
+- Kiểm tra service có chạy không
+- Kiểm tra port đã bị chiếm chưa
+- Restart service
+
+### Lỗi "Unauthorized" (401)
+- Token không hợp lệ hoặc đã hết hạn
+- Login lại để lấy token mới
+- Kiểm tra JWT_SECRET trong .env files
+
+### Lỗi MongoDB connection
+- Kiểm tra MongoDB đang chạy
+- Kiểm tra connection string
+- Thử restart MongoDB
+
+### Lỗi RabbitMQ connection
+- Kiểm tra Docker: `docker ps`
+- Restart RabbitMQ: `docker-compose restart rabbitmq`
+- Truy cập UI: http://localhost:15672 (guest/guest)
+
+### Order không complete
+- Kiểm tra Order service có chạy
+- Kiểm tra RabbitMQ connection
+- Xem logs ở terminal Order service
 
 ---
 
+## 📊 Monitoring & Debugging
+
+### RabbitMQ Management UI
+- URL: http://localhost:15672
+- Login: guest / guest
+- Kiểm tra queues: `orders`, `products`
+
+### MongoDB
+```bash
+# Kết nối MongoDB
+mongosh
+
+# Xem databases
+show dbs
+
+# Kiểm tra data
+use authdb
+db.users.find().pretty()
+
+use productdb
+db.products.find().pretty()
+
+use orderdb
+db.orders.find().pretty()
+```
+
+### Logs
+- Xem terminal của từng service
+- Auth service: Port 3000 logs
+- Product service: Port 3001 logs
+- Order service: Port 3002 logs
+
+---
+
+## 📂 Cấu trúc Project
 
 ```
+.
+├── auth/                       # Auth microservice
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── middlewares/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   ├── services/
+│   │   └── test/
+│   ├── index.js
+│   ├── package.json
+│   └── .env
+│
+├── product/                    # Product microservice
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── models/
+│   │   ├── repositories/
+│   │   ├── routes/
+│   │   ├── services/
+│   │   ├── utils/
+│   │   └── test/
+│   ├── index.js
+│   ├── package.json
+│   └── .env
+│
+├── order/                      # Order microservice
+│   ├── src/
+│   │   ├── models/
+│   │   ├── utils/
+│   │   ├── app.js
+│   │   └── config.js
+│   ├── index.js
+│   ├── package.json
+│   └── .env
+│
+├── api-gateway/                # API Gateway
+│   ├── index.js
+│   └── package.json
+│
+├── docker-compose.yml          # Docker configuration
+├── package.json               # Root dependencies
+├── start-all-services.bat     # Startup script
+├── stop-all-services.bat      # Shutdown script
+├── E-Commerce_Microservices.postman_collection.json
+├── POSTMAN_TESTING_GUIDE.md
+├── QUICK_START_POSTMAN.md
+└── README.md
+```
+
+---
+
+## 🎓 Tính năng chính
+
+✅ **Microservices Architecture** - Services độc lập, dễ scale  
+✅ **JWT Authentication** - Bảo mật API endpoints  
+✅ **Event-Driven Architecture** - RabbitMQ message broker  
+✅ **API Gateway Pattern** - Single entry point  
+✅ **Repository Pattern** - Clean code architecture  
+✅ **Unit Testing** - Mocha + Chai  
+✅ **Docker Support** - Easy deployment  
+✅ **RESTful API** - Standard API design  
+
+---
+
+## 📄 License
+
+This project is for educational purposes.
+
+---
+
+## 👨‍💻 Author
+
+**Nguyễn Ngọc Hồng Linh**  
+MSSV: 22649491  
+GitHub: [@HongLinh1103](https://github.com/HongLinh1103)
+
+---
+
+## 📞 Support
+
+Nếu gặp vấn đề, vui lòng:
+1. Kiểm tra [Troubleshooting](#troubleshooting)
+2. Xem logs ở terminal
+3. Kiểm tra RabbitMQ Management UI
+4. Kiểm tra MongoDB data
+
+---
+
+**Happy Coding! 🚀**

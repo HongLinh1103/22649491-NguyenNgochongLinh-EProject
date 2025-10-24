@@ -6,12 +6,14 @@ const productsRouter = require("./routes/productRoutes");
 require("dotenv").config();
 
 class App {
-  constructor() {
+  constructor(options = {}) {
     this.app = express();
-    this.connectDB();
     this.setMiddlewares();
     this.setRoutes();
-    this.setupMessageBroker();
+    // Skip RabbitMQ in test environment
+    if (!options.skipMessageBroker && process.env.NODE_ENV !== 'test') {
+      this.setupMessageBroker();
+    }
   }
 
   async connectDB() {
@@ -40,10 +42,14 @@ class App {
     MessageBroker.connect();
   }
 
-  start() {
-    this.server = this.app.listen(3001, () =>
-      console.log("Server started on port 3001")
-    );
+  start(port) {
+    const listenPort = (typeof port === 'number')
+      ? port
+      : (process.env.PORT ? Number(process.env.PORT) : 3001);
+    this.server = this.app.listen(listenPort, () => {
+      const actualPort = this.server.address().port;
+      console.log(`Server started on port ${actualPort}`);
+    });
   }
 
   async stop() {
