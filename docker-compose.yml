@@ -1,15 +1,9 @@
 version: '3.8'
-services:
-  mysql:
-    image: mysql:8.0
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
 
+services:
+  # ========================
+  # Database Services
+  # ========================
   mongodb:
     image: mongo:6.0
     restart: always
@@ -22,12 +16,15 @@ services:
     image: rabbitmq:3-management
     restart: always
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672"      # RabbitMQ (message broker)
+      - "15672:15672"    # Web management console
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  # ========================
+  # Application Services
+  # ========================
   auth:
     build:
       context: ./auth
@@ -41,8 +38,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
+      - mongodb
       - rabbitmq
-      - mysql
 
   product:
     build:
@@ -58,8 +55,8 @@ services:
     ports:
       - "3001:3001"
     depends_on:
+      - mongodb
       - rabbitmq
-      - mysql
 
   order:
     build:
@@ -71,28 +68,37 @@ services:
     environment:
       - MONGODB_URI=mongodb://mongodb:27017/orderdb
       - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
     ports:
       - "3002:3002"
     depends_on:
+      - mongodb
       - rabbitmq
-      - mysql
 
+  # ========================
+  # API Gateway
+  # ========================
   api-gateway:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
     restart: always
+    env_file:
+      - ./api-gateway/.env
+    environment:
+      - PORT=3003
+      - AUTH_SERVICE_URL=http://auth:3000
+      - PRODUCT_SERVICE_URL=http://product:3001
+      - ORDER_SERVICE_URL=http://order:3002
     ports:
       - "3003:3003"
-    environment:
-      - AUTH_URL=http://auth:3000
-      - PRODUCT_URL=http://product:3001
-      - ORDER_URL=http://order:3002
     depends_on:
       - auth
       - product
       - order
 
+# ========================
+# Volumes
+# ========================
 volumes:
-  mysql_data:
   mongodb_data:

@@ -22,10 +22,12 @@ function mountService(prefix, target) {
   });
 }
 
-// Use environment overrides when available (useful for Docker)
-const AUTH_TARGET = process.env.AUTH_URL || "http://localhost:3000";
-const PRODUCT_TARGET = process.env.PRODUCT_URL || "http://localhost:3001";
-const ORDER_TARGET = process.env.ORDER_URL || "http://localhost:3002";
+// Use environment overrides when available (useful for Docker).
+// Prefer service DNS names when running under Docker Compose so the gateway
+// connects to other containers on the compose network instead of localhost.
+const AUTH_TARGET = process.env.AUTH_SERVICE_URL || process.env.AUTH_URL || "http://auth:3000";
+const PRODUCT_TARGET = process.env.PRODUCT_SERVICE_URL || process.env.PRODUCT_URL || "http://product:3001";
+const ORDER_TARGET = process.env.ORDER_SERVICE_URL || process.env.ORDER_URL || "http://order:3002";
 
 // Route requests to the respective services via prefix
 mountService("/auth", AUTH_TARGET);
