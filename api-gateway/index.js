@@ -22,10 +22,15 @@ function mountService(prefix, target) {
   });
 }
 
+// Use environment overrides when available (useful for Docker)
+const AUTH_TARGET = process.env.AUTH_URL || "http://localhost:3000";
+const PRODUCT_TARGET = process.env.PRODUCT_URL || "http://localhost:3001";
+const ORDER_TARGET = process.env.ORDER_URL || "http://localhost:3002";
+
 // Route requests to the respective services via prefix
-mountService("/auth", "http://localhost:3000");
-mountService("/products", "http://localhost:3001");
-mountService("/orders", "http://localhost:3002");
+mountService("/auth", AUTH_TARGET);
+mountService("/products", PRODUCT_TARGET);
+mountService("/orders", ORDER_TARGET);
 
 // Start the server
 const port = process.env.PORT || 3003;

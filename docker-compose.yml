@@ -10,6 +10,14 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
+  mongodb:
+    image: mongo:6.0
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
   rabbitmq:
     image: rabbitmq:3-management
     restart: always
@@ -20,5 +28,71 @@ services:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
 
+  auth:
+    build:
+      context: ./auth
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - ./auth/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/authdb
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - rabbitmq
+      - mysql
+
+  product:
+    build:
+      context: ./product
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - ./product/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/productdb
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+    ports:
+      - "3001:3001"
+    depends_on:
+      - rabbitmq
+      - mysql
+
+  order:
+    build:
+      context: ./order
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - ./order/.env
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/orderdb
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+    ports:
+      - "3002:3002"
+    depends_on:
+      - rabbitmq
+      - mysql
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    restart: always
+    ports:
+      - "3003:3003"
+    environment:
+      - AUTH_URL=http://auth:3000
+      - PRODUCT_URL=http://product:3001
+      - ORDER_URL=http://order:3002
+    depends_on:
+      - auth
+      - product
+      - order
+
 volumes:
   mysql_data:
+  mongodb_data:
