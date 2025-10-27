@@ -13,9 +13,7 @@ function isAuthenticated(req, res, next) {
 
   try {
     // Verify the token using the JWT library and the secret key
-    // Use fallback secret for testing if JWT_SECRET is not set
-    const secret = process.env.JWT_SECRET || "supersecret";
-    const decodedToken = jwt.verify(token, secret);
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decodedToken;
     console.log(req.user);
     next();

@@ -23,21 +23,19 @@ class AuthController {
 
   async register(req, res) {
     const user = req.body;
-    console.log("AuthController.register called with", user);
+  
     try {
       const existingUser = await this.authService.findUserByUsername(user.username);
-
+  
       if (existingUser) {
-        console.log("Username already taken");
-        return res.status(400).json({ message: "Username already taken" });
+        console.log("Username already taken")
+        throw new Error("Username already taken");
       }
-
+  
       const result = await this.authService.register(user);
-      console.log("AuthController.register created user:", { id: result._id, username: result.username });
       res.json(result);
     } catch (err) {
-      console.error("AuthController.register error:", err);
-      res.status(500).json({ message: err.message || "Internal server error" });
+      res.status(400).json({ message: err.message });
     }
   }
 

@@ -8,23 +8,17 @@ class App {
   constructor() {
     this.app = express();
     this.authController = new AuthController();
+    this.connectDB();
     this.setMiddlewares();
     this.setRoutes();
   }
 
   async connectDB() {
-    console.log("Attempting MongoDB connection using:", config.mongoURI);
-    try {
-      await mongoose.connect(config.mongoURI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      });
-      console.log("MongoDB connected");
-    } catch (err) {
-      console.error("MongoDB connection error:", err.message || err);
-      // rethrow so caller (index.js) can decide what to do
-      throw err;
-    }
+    await mongoose.connect(config.mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("MongoDB connected");
   }
 
   async disconnectDB() {
@@ -43,14 +37,8 @@ class App {
     this.app.get("/dashboard", authMiddleware, (req, res) => res.json({ message: "Welcome to dashboard" }));
   }
 
-  start(port) {
-    const listenPort = (typeof port === 'number')
-      ? port
-      : (process.env.PORT ? Number(process.env.PORT) : 3000);
-    this.server = this.app.listen(listenPort, () => {
-      const actualPort = this.server.address().port;
-      console.log(`Server started on port ${actualPort}`);
-    });
+  start() {
+    this.server = this.app.listen(3000, () => console.log("Server started on port 3000"));
   }
 
   async stop() {

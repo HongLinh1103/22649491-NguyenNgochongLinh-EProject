@@ -1,6 +1,5 @@
 const chai = require("chai");
 const chaiHttp = require("chai-http");
-const jwt = require("jsonwebtoken");
 const App = require("../app");
 const expect = chai.expect;
 require("dotenv").config();
@@ -10,27 +9,25 @@ chai.use(chaiHttp);
 
 describe("Products", () => {
   let app;
-  let authToken;
 
   before(async () => {
-    app = new App({ skipMessageBroker: true });
-    await app.connectDB();
+    app = new App();
+    await Promise.all([app.connectDB(), app.setupMessageBroker()])
 
-    // Generate a test JWT token instead of calling auth service
-    // This avoids dependency on auth service being running
-    authToken = jwt.sign(
-      { userId: "test-user-id", username: "testuser" },
-      process.env.JWT_SECRET || "supersecret",
-      { expiresIn: "1h" }
-    );
-    
-    console.log("Test token generated:", authToken);
-    // Start on an ephemeral port to avoid conflicts
-    app.start(0);
+    // Authenticate with the auth microservice to get a token
+    const authRes = await chai
+      .request("http://localhost:3000")
+      .post("/login")
+      .send({ username: process.env.LOGIN_TEST_USER, password: process.env.LOGIN_TEST_PASSWORD });
+
+    authToken = authRes.body.token;
+    console.log(authToken);
+    app.start();
   });
 
   after(async () => {
-    await app.stop();
+    await app.disconnectDB();
+    app.stop();
   });
 
   describe("POST /products", () => {

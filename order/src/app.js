@@ -30,9 +30,9 @@ class App {
     setTimeout(async () => {
       try {
         // ✅ Dùng biến từ config thay vì hardcode
-        console.log("RabbitMQ URI:", config.rabbitMQURI);
+        console.log("RabbitMQ URI:", 'amqp://rabbitmq');
 
-        const connection = await amqp.connect(config.rabbitMQURI);
+        const connection = await amqp.connect('amqp://rabbitmq');
         console.log("Connected to RabbitMQ");
 
         const channel = await connection.createChannel();
@@ -62,7 +62,7 @@ class App {
       } catch (err) {
         console.error("Failed to connect to RabbitMQ:", err.message);
       }
-    }, 10000);
+    }, 20000);
   }
 
   start() {

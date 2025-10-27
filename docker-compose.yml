@@ -1,104 +1,70 @@
-version: '3.8'
+version: "3.9"
 
 services:
-  # ========================
-  # Database Services
-  # ========================
-  mongodb:
-    image: mongo:6.0
-    restart: always
+  mongo:
+    image: mongo:6
+    container_name: mongo
+
     ports:
       - "27017:27017"
+
     volumes:
-      - mongodb_data:/data/db
+      - mongo_data:/data/db
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:3.11-management
+    container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"      # RabbitMQ (message broker)
-      - "15672:15672"    # Web management console
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      - "5672:5672"
+      - "15672:15672"
 
-  # ========================
-  # Application Services
-  # ========================
-  auth:
+
+  auth-service:
     build:
       context: ./auth
       dockerfile: Dockerfile
-    restart: always
-    env_file:
-      - ./auth/.env
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/authdb
-      - JWT_SECRET=${JWT_SECRET:-supersecret}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongodb
-      - rabbitmq
+    container_name: auth-service
 
-  product:
+
+    depends_on:
+      - mongo
+
+
+  product-service:
     build:
       context: ./product
       dockerfile: Dockerfile
-    restart: always
-    env_file:
-      - ./product/.env
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/productdb
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-supersecret}
-    ports:
-      - "3001:3001"
+    container_name: product-service
+
+
     depends_on:
-      - mongodb
+      - mongo
       - rabbitmq
 
-  order:
+  order-service:
     build:
       context: ./order
       dockerfile: Dockerfile
-    restart: always
-    env_file:
-      - ./order/.env
-    environment:
-      - MONGODB_URI=mongodb://mongodb:27017/orderdb
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
-      - JWT_SECRET=${JWT_SECRET:-supersecret}
-    ports:
-      - "3002:3002"
+    container_name: order-service
     depends_on:
-      - mongodb
+      - mongo
       - rabbitmq
+      - product-service
 
-  # ========================
-  # API Gateway
-  # ========================
   api-gateway:
     build:
       context: ./api-gateway
       dockerfile: Dockerfile
+    container_name: api-gateway
     restart: always
-    env_file:
-      - ./api-gateway/.env
-    environment:
-      - PORT=3003
-      - AUTH_SERVICE_URL=http://auth:3000
-      - PRODUCT_SERVICE_URL=http://product:3001
-      - ORDER_SERVICE_URL=http://order:3002
     ports:
       - "3003:3003"
-    depends_on:
-      - auth
-      - product
-      - order
 
-# ========================
-# Volumes
-# ========================
+    depends_on:
+      - auth-service
+      - product-service
+      - order-service
+
 volumes:
-  mongodb_data:
+  mongo_data:

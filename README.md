@@ -105,16 +105,13 @@ docker ps
 
 Chuẩn bị trong Postman:
 
-- Import collection: `E-Commerce_Microservices.postman_collection.json` (đã có trong repo).
-- Tạo environment `local` với biến:
-  - `baseUrl` = `http://localhost:3003` (sử dụng API Gateway) — nếu gọi trực tiếp service thay đổi cho phù hợp.
-
-Flow test (thực hiện theo thứ tự):
+- Import collection: `E-Commerce_Microservices.postman_collection.json` 
+- Flow test (thực hiện theo thứ tự):
 
 1) Tạo tài khoản (Register)
 
 - Method: POST
-- URL: `{{baseUrl}}/auth/register`
+- URL: `http://localhost:3003/auth/register`
 - Body (raw JSON):
 
 ```json
@@ -127,16 +124,18 @@ Flow test (thực hiện theo thứ tự):
 2) Đăng nhập (Login) — lấy JWT
 
 - Method: POST
-- URL: `{{baseUrl}}/auth/login`
+- URL: `http://localhost:3003/auth/login`
 - Body: giống trên
+- Nhấn **Send** để gửi request. 
 - Response: `{ "token": "<JWT>" }`
-- Trong Postman: tạo biến `authToken` và lưu giá trị `Bearer <JWT>` (bao gồm từ khóa `Bearer`).
+**⚠️ Quan trọng:** Copy token này để sử dụng cho bước tiếp theo!
 
 3) Tạo sản phẩm (Create Product)
 
 - Method: POST
-- URL: `{{baseUrl}}/products/api/products`
-- Headers: `Authorization: {{authToken}}`, `Content-Type: application/json`
+- URL: `http://localhost:3003/products/api/products`
+- Headers: Vào tab **Authorization** -> Chọn **Auth Type** là **Bearer Token**
+- Nhập mã Token vừa copy ở bước đăng nhập vào ô
 - Body:
 
 ```json
@@ -146,19 +145,23 @@ Flow test (thực hiện theo thứ tự):
   "description": "Test product"
 }
 ```
-- Lưu `productId` từ response vào biến môi trường `productId`.
+- Nhấn **Send** để gửi request. 
+
 
 4) Lấy sản phẩm theo id (Get Product)
 
 - Method: GET
-- URL: `{{baseUrl}}/products/api/products/{{productId}}`
-- Headers: `Authorization: {{authToken}}`
+- URL: `http://localhost:3003/products/api/products/{{productId}}`
+- Headers: Vào tab **Authorization** -> Chọn **Auth Type** là **Bearer Token**
+- Nhập mã Token vừa copy ở bước đăng nhập vào ô
+- Nhấn **Send** để gửi request. 
 
 5) Đặt hàng (Buy)
 
 - Method: POST
-- URL: `{{baseUrl}}/products/api/products/buy`
-- Headers: `Authorization: {{authToken}}`, `Content-Type: application/json`
+- URL: `http://localhost:3003/products/api/products/buy`
+- Headers: Vào tab **Authorization** -> Chọn **Auth Type** là **Bearer Token**
+- Nhập mã Token vừa copy ở bước đăng nhập vào ô
 - Body:
 
 ```json
@@ -166,13 +169,7 @@ Flow test (thực hiện theo thứ tự):
   "ids": ["{{productId}}"]
 }
 ```
-
-- Kết quả: endpoint có thể sử dụng long-polling; mong đợi kết quả `status: completed` khi Order Service xử lý xong.
-
-Tips nhanh trong Postman:
-
-- Tạo Pre-request script (nếu muốn tự set `authToken` từ response login). Có thể dùng Tests tab trong request login để `pm.environment.set("authToken", "Bearer " + pm.response.json().token)`.
-- Sử dụng variables: `baseUrl`, `authToken`, `productId` để chạy thao tác nhanh.
+- Nhấn **Send** để gửi request. 
 
 ---
 

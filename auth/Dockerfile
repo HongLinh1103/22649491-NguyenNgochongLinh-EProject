@@ -1,8 +1,20 @@
-FROM node:18-alpine
+# Base image
+FROM node:18
+
+# Set working directory
 WORKDIR /app
+
+# Copy package files trước để tối ưu cache
 COPY package*.json ./
-RUN npm install --production || npm install
+
+# Cài dependencies
+RUN npm install
+
+# Copy toàn bộ source code
 COPY . .
-ENV NODE_ENV=production
-EXPOSE 3000
-CMD ["node", "index.js"]
+
+# Expose port (phải trùng với PORT trong .env)
+EXPOSE 3001
+
+# Start service
+CMD ["npm", "start"]

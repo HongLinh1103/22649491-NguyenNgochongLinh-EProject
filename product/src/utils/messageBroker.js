@@ -10,7 +10,7 @@ class MessageBroker {
 
   async connect() {
     console.log("Connecting to RabbitMQ...");
-
+    setTimeout( async() =>{
     while (!this.channel) {
       try {
         this.connection = await amqp.connect(config.rabbitMQURI);
@@ -24,7 +24,7 @@ class MessageBroker {
         );
         await this.sleep(this.retryInterval);
       }
-    }
+    }}, 20000)
   }
 
   sleep(ms) {
