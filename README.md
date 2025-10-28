@@ -54,6 +54,7 @@ Từ thư mục project root (nơi có `docker-compose.yml`):
 ```powershell
 docker-compose up --build -d
 ```
+<img src="img/test_docker.png" alt="" />
 
 Để xem container đang chạy:
 
@@ -62,24 +63,26 @@ docker ps
 ```
 
 
-
+## TEST POSTMAN
 ### Auth
 - POST /register — đăng ký user
-  - URL: `http://localhost:3000/register`
-  - Body JSON: { "username": "testuser", "password": "testpass" }
+<img src="img/register.png" alt="" />
 - POST /login — đăng nhập, trả về `token`
-  - URL: `http://localhost:3000/login`
-  - Body JSON: { "username": "testuser", "password": "testpass" }
-  - Response: { "token": "<jwt>" }
+<img src="img/login.png" alt="" />
+
 
 ### Product (protected — Bearer JWT required)
 - POST /api/products — tạo sản phẩm
   - Header: `Authorization: Bearer <token>`
-  - Body JSON: { "name": "SP1", "description": "x", "price": 100 }
+<img src="img/createProduct.png" alt="" />
 - GET /api/products — danh sách sản phẩm
+<img src="img/createProduct.png" alt="" />
 - GET /api/products/:id — chi tiết 1 product
+<img src="img/get_productId.png" alt="" />
 - POST /api/products/buy — mua sản phẩm (body `{ ids: ["<productId>"] }`) — luồng dùng RabbitMQ + order-service
+<img src="img/buyProduct.png" alt="" />
 - GET /api/products/order/:orderId — lấy trạng thái hóa đơn theo orderId (được trả khi buy hoàn thành)
+<img src="img/selectOrderId.png" alt="" />
 
 ---
 
