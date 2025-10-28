@@ -1,5 +1,6 @@
 const amqp = require("amqplib");
 const config = require("../config");
+const logger = require("./logger");
 
 class MessageBroker {
   constructor() {
@@ -9,16 +10,16 @@ class MessageBroker {
   }
 
   async connect() {
-    console.log("Connecting to RabbitMQ...");
+    logger.log("Connecting to RabbitMQ...");
     setTimeout( async() =>{
     while (!this.channel) {
       try {
         this.connection = await amqp.connect(config.rabbitMQURI);
         this.channel = await this.connection.createChannel();
         await this.channel.assertQueue(config.queueName);
-        console.log("✅ RabbitMQ connected");
+        logger.log("✅ RabbitMQ connected");
       } catch (err) {
-        console.error(
+        logger.error(
           `Failed to connect to RabbitMQ: ${err.message}. Retrying in ${this.retryInterval /
             1000}s...`
         );
@@ -33,21 +34,21 @@ class MessageBroker {
 
   async publishMessage(queue, message) {
     if (!this.channel) {
-      console.error("No RabbitMQ channel available.");
+      logger.error("No RabbitMQ channel available.");
       return;
     }
 
     try {
       await this.channel.sendToQueue(queue, Buffer.from(JSON.stringify(message)));
-      console.log(`Message published to queue "${queue}"`);
+      logger.log(`Message published to queue "${queue}"`);
     } catch (err) {
-      console.error("Failed to publish message:", err.message);
+      logger.error("Failed to publish message:", err.message);
     }
   }
 
   async consumeMessage(queue, callback) {
     if (!this.channel) {
-      console.error("No RabbitMQ channel available.");
+      logger.error("No RabbitMQ channel available.");
       return;
     }
 
@@ -60,16 +61,16 @@ class MessageBroker {
           this.channel.ack(message);
         }
       });
-      console.log(`Started consuming messages from queue "${queue}"`);
+      logger.log(`Started consuming messages from queue "${queue}"`);
     } catch (err) {
-      console.error("Failed to consume messages:", err.message);
+      logger.error("Failed to consume messages:", err.message);
     }
   }
 
   async disconnect() {
     if (this.channel) await this.channel.close();
     if (this.connection) await this.connection.close();
-    console.log("RabbitMQ disconnected");
+    logger.log("RabbitMQ disconnected");
   }
 }
 

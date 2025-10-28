@@ -1,6 +1,7 @@
 const Product = require("../models/product");
 const messageBroker = require("../utils/messageBroker");
 const uuid = require('uuid');
+const logger = require("../utils/logger");
 
 /**
  * Class to hold the API implementation for the product services
@@ -27,11 +28,12 @@ class ProductController {
         return res.status(400).json({ message: validationError.message });
       }
 
-      await product.save({ timeout: 30000 });
+  await product.save({ timeout: 30000 });
+  logger.log(`Product created: ${product._id} ${product.name} ${product.price}`);
 
-      res.status(201).json(product);
+  res.status(201).json(product);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ message: "Server error" });
     }
   }
@@ -66,7 +68,7 @@ class ProductController {
         if (order) {
           // update the order in the map
           this.ordersMap.set(orderId, { ...order, ...orderData, status: 'completed' });
-          console.log("Updated order:", order);
+          logger.log("Updated order:", order);
         }
       });
   
@@ -80,14 +82,15 @@ class ProductController {
       // Once the order is marked as completed, return the complete order details
       return res.status(201).json(order);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ message: "Server error" });
     }
   }
   
 
   async getOrderStatus(req, res, next) {
-    const { orderId } = req.params;
+    // support both :orderId and :id route params
+    const orderId = req.params.orderId || req.params.id;
     const order = this.ordersMap.get(orderId);
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
@@ -105,7 +108,7 @@ class ProductController {
 
       res.status(200).json(products);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
       res.status(500).json({ message: "Server error" });
     }
   }

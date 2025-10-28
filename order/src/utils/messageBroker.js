@@ -1,6 +1,7 @@
 const amqp = require("amqplib");
 const config = require("../config");
 const OrderService = require("../services/orderService");
+const logger = require("./logger");
 
 class MessageBroker {
   static async connect() {
@@ -19,12 +20,13 @@ class MessageBroker {
           await orderService.createOrder(order);
           channel.ack(message);
         } catch (error) {
-          console.error(error);
+          logger.error(error);
           channel.reject(message, false);
         }
       });
+      logger.log(`Started consuming from ${config.rabbitMQQueue}`);
     } catch (error) {
-      console.error(error);
+      logger.error(error);
     }
   }
 }

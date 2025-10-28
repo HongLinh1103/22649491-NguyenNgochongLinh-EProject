@@ -18,7 +18,8 @@ class App {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("MongoDB connected");
+    const logger = require('./utils/logger');
+    logger.log("MongoDB connected");
   }
 
   async disconnectDB() {
@@ -29,6 +30,9 @@ class App {
   setMiddlewares() {
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: false }));
+    // request/response logging
+    const requestLogger = require('./middlewares/requestLogger');
+    this.app.use(requestLogger);
   }
 
   setRoutes() {
@@ -38,13 +42,15 @@ class App {
   }
 
   start() {
-    this.server = this.app.listen(3000, () => console.log("Server started on port 3000"));
+    const logger = require('./utils/logger');
+    this.server = this.app.listen(3000, () => logger.log("Server started on port 3000"));
   }
 
   async stop() {
     await mongoose.disconnect();
     this.server.close();
-    console.log("Server stopped");
+    const logger = require('./utils/logger');
+    logger.log("Server stopped");
   }
 }
 

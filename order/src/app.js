@@ -8,6 +8,12 @@ class App {
   constructor() {
     this.app = express();
     this.connectDB();
+    // request/response logging for any HTTP routes
+    const requestLogger = require('./middlewares/requestLogger');
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: false }));
+    this.app.use(requestLogger);
+
     this.setupOrderConsumer();
   }
 
@@ -16,7 +22,8 @@ class App {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log("MongoDB connected");
+    const logger = require('./utils/logger');
+    logger.log("MongoDB connected");
   }
 
   async disconnectDB() {
@@ -25,21 +32,22 @@ class App {
   }
 
   async setupOrderConsumer() {
-    console.log("Connecting to RabbitMQ...");
+  const logger = require('./utils/logger');
+  logger.log("Connecting to RabbitMQ...");
 
     setTimeout(async () => {
       try {
-        // ✅ Dùng biến từ config thay vì hardcode
-        console.log("RabbitMQ URI:", 'amqp://rabbitmq');
+  // ✅ Dùng biến từ config thay vì hardcode
+  logger.log("RabbitMQ URI:", 'amqp://rabbitmq');
 
-        const connection = await amqp.connect('amqp://rabbitmq');
-        console.log("Connected to RabbitMQ");
+  const connection = await amqp.connect('amqp://rabbitmq');
+  logger.log("Connected to RabbitMQ");
 
         const channel = await connection.createChannel();
         await channel.assertQueue(config.rabbitMQQueue);
 
         channel.consume(config.rabbitMQQueue, async (data) => {
-          console.log("Consuming ORDER service");
+          logger.log("Consuming ORDER service");
           const { products, username, orderId } = JSON.parse(data.content);
 
           const newOrder = new Order({
@@ -50,7 +58,7 @@ class App {
 
           await newOrder.save();
           channel.ack(data);
-          console.log("Order saved to DB and ACK sent to ORDER queue");
+          logger.log("Order saved to DB and ACK sent to ORDER queue");
 
           // Send fulfilled order to PRODUCTS service
           const { user, products: savedProducts, totalPrice } = newOrder.toJSON();
@@ -66,15 +74,17 @@ class App {
   }
 
   start() {
+    const logger = require('./utils/logger');
     this.server = this.app.listen(config.port, () =>
-      console.log(`Server started on port ${config.port}`)
+      logger.log(`Server started on port ${config.port}`)
     );
   }
 
   async stop() {
     await mongoose.disconnect();
     this.server.close();
-    console.log("Server stopped");
+    const logger = require('./utils/logger');
+    logger.log("Server stopped");
   }
 }
 

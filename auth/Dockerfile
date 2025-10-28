@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Expose port (phải trùng với PORT trong .env)
-EXPOSE 3001
+EXPOSE 3000
 
 # Start service
 CMD ["npm", "start"]

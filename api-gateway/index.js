@@ -21,6 +21,7 @@ app.use("/orders", (req, res) => {
 
 // Start the server
 const port = process.env.PORT || 3003;
+const logger = require('./logger');
 app.listen(port, () => {
-  console.log(`API Gateway listening on port ${port}`);
+  logger.log(`API Gateway listening on port ${port}`);
 });

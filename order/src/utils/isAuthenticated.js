@@ -17,7 +17,8 @@ function isAuthenticated(req, res, next) {
     req.user = decodedToken;
     next();
   } catch (err) {
-    console.error(err);
+    const logger = require('./logger');
+    logger.error(err);
     return res.status(401).json({ message: 'Unauthorized' });
   }
 }

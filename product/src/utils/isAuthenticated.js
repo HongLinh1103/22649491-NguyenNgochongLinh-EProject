@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const logger = require("./logger");
 
 function isAuthenticated(req, res, next) {
   // Check for the presence of an authorization header
@@ -15,10 +16,10 @@ function isAuthenticated(req, res, next) {
     // Verify the token using the JWT library and the secret key
     const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
     req.user = decodedToken;
-    console.log(req.user);
+    logger.log(req.user);
     next();
   } catch (err) {
-    console.error(err);
+    logger.error(err);
     return res.status(401).json({ message: "Unauthorized" });
   }
 }

@@ -1,4 +1,3 @@
-
 # E-COMMERCE MICROSERVICES — TÓM TẮT & HƯỚNG DẪN TEST
 
 **Sinh viên:** Nguyễn Ngọc Hồng Linh
@@ -49,6 +48,47 @@
     └─────────┘
 ```
 
+## Chạy toàn bộ stack (Docker Compose)
+Từ thư mục project root (nơi có `docker-compose.yml`):
+
+```powershell
+docker-compose up --build -d
+```
+
+Để xem container đang chạy:
+
+```powershell
+docker ps
+```
+
+
+
+### Auth
+- POST /register — đăng ký user
+  - URL: `http://localhost:3000/register`
+  - Body JSON: { "username": "testuser", "password": "testpass" }
+- POST /login — đăng nhập, trả về `token`
+  - URL: `http://localhost:3000/login`
+  - Body JSON: { "username": "testuser", "password": "testpass" }
+  - Response: { "token": "<jwt>" }
+
+### Product (protected — Bearer JWT required)
+- POST /api/products — tạo sản phẩm
+  - Header: `Authorization: Bearer <token>`
+  - Body JSON: { "name": "SP1", "description": "x", "price": 100 }
+- GET /api/products — danh sách sản phẩm
+- GET /api/products/:id — chi tiết 1 product
+- POST /api/products/buy — mua sản phẩm (body `{ ids: ["<productId>"] }`) — luồng dùng RabbitMQ + order-service
+- GET /api/products/order/:orderId — lấy trạng thái hóa đơn theo orderId (được trả khi buy hoàn thành)
+
+Ví dụ nhanh (Postman):
+1. POST http://localhost:3000/register → đăng ký
+2. POST http://localhost:3000/login → nhận `token` (save to environment variable `token`)
+3. POST http://localhost:3001/api/products (Authorization: Bearer {{token}}) → tạo product, lưu `productId`
+4. POST http://localhost:3001/api/products/buy (Authorization: Bearer {{token}}) body { ids: ["{{productId}}"] } → chờ trả order
+5. GET http://localhost:3001/api/products/order/{{orderId}} (Authorization: Bearer {{token}}) → xem trạng thái order
+
+Lưu ý: Product service và Order service sử dụng RabbitMQ; khi mua, product service publish message `orders` queue, order-service consume và sau khi lưu order sẽ publish to `products` queue để product service cập nhật trạng thái.
 
 ---
 
@@ -84,105 +124,4 @@
 
 - Client → API Gateway → (HTTP REST) → các service (Auth/Product/Order) cho các thao tác đồng bộ.
 - Product Service ↔ Order Service: giao tiếp bất đồng bộ qua RabbitMQ (publish/consume messages). MongoDB được dùng cho lưu trữ dữ liệu dịch vụ.
-
-
----
-
-## 4. Quick start (chạy nhanh)
-
-Chạy toàn bộ bằng Docker (khuyến nghị cho buổi demo):
-
-```powershell
-# ở thư mục gốc project
-docker-compose up -d --build
-docker ps
-```
-
-
----
-
-## 5. Hướng dẫn test bằng Postman (chi tiết, step-by-step)
-
-Chuẩn bị trong Postman:
-
-- Import collection: `E-Commerce_Microservices.postman_collection.json` 
-- Flow test (thực hiện theo thứ tự):
-
-1) Tạo tài khoản (Register)
-
-- Method: POST
-- URL: `http://localhost:3003/auth/register`
-- Body (raw JSON):
-
-```json
-{
-  "username": "student01",
-  "password": "pass123"
-}
-```
-
-2) Đăng nhập (Login) — lấy JWT
-
-- Method: POST
-- URL: `http://localhost:3003/auth/login`
-- Body: giống trên
-- Nhấn **Send** để gửi request. 
-- Response: `{ "token": "<JWT>" }`
-**⚠️ Quan trọng:** Copy token này để sử dụng cho bước tiếp theo!
-
-3) Tạo sản phẩm (Create Product)
-
-- Method: POST
-- URL: `http://localhost:3003/products/api/products`
-- Headers: Vào tab **Authorization** -> Chọn **Auth Type** là **Bearer Token**
-- Nhập mã Token vừa copy ở bước đăng nhập vào ô
-- Body:
-
-```json
-{
-  "name": "Sample Product",
-  "price": 9.99,
-  "description": "Test product"
-}
-```
-- Nhấn **Send** để gửi request. 
-
-
-4) Lấy sản phẩm theo id (Get Product)
-
-- Method: GET
-- URL: `http://localhost:3003/products/api/products/{{productId}}`
-- Headers: Vào tab **Authorization** -> Chọn **Auth Type** là **Bearer Token**
-- Nhập mã Token vừa copy ở bước đăng nhập vào ô
-- Nhấn **Send** để gửi request. 
-
-5) Đặt hàng (Buy)
-
-- Method: POST
-- URL: `http://localhost:3003/products/api/products/buy`
-- Headers: Vào tab **Authorization** -> Chọn **Auth Type** là **Bearer Token**
-- Nhập mã Token vừa copy ở bước đăng nhập vào ô
-- Body:
-
-```json
-{
-  "ids": ["{{productId}}"]
-}
-```
-- Nhấn **Send** để gửi request. 
-
----
-
-## 6. Kiểm tra & troubleshooting nhanh
-
-- Unit tests: `npm test` (root hoặc trong từng service). Kết quả mong đợi: 7 passing.
-- Kiểm tra Docker: `docker ps` (ports: 3000..3003, 5672, 15672, 27017).
-- RabbitMQ UI: http://localhost:15672 (guest/guest) — kiểm tra queues `orders`, `products`.
-
----
-
-
-
-
-
 
