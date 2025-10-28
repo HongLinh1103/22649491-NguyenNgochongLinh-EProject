@@ -81,15 +81,6 @@ docker ps
 - POST /api/products/buy — mua sản phẩm (body `{ ids: ["<productId>"] }`) — luồng dùng RabbitMQ + order-service
 - GET /api/products/order/:orderId — lấy trạng thái hóa đơn theo orderId (được trả khi buy hoàn thành)
 
-Ví dụ nhanh (Postman):
-1. POST http://localhost:3000/register → đăng ký
-2. POST http://localhost:3000/login → nhận `token` (save to environment variable `token`)
-3. POST http://localhost:3001/api/products (Authorization: Bearer {{token}}) → tạo product, lưu `productId`
-4. POST http://localhost:3001/api/products/buy (Authorization: Bearer {{token}}) body { ids: ["{{productId}}"] } → chờ trả order
-5. GET http://localhost:3001/api/products/order/{{orderId}} (Authorization: Bearer {{token}}) → xem trạng thái order
-
-Lưu ý: Product service và Order service sử dụng RabbitMQ; khi mua, product service publish message `orders` queue, order-service consume và sau khi lưu order sẽ publish to `products` queue để product service cập nhật trạng thái.
-
 ---
 
 ## 3. Trả lời 5 yêu cầu chính
