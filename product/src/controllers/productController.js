@@ -28,10 +28,10 @@ class ProductController {
         return res.status(400).json({ message: validationError.message });
       }
 
-  await product.save({ timeout: 30000 });
-  logger.log(`Product created: ${product._id} ${product.name} ${product.price}`);
+      await product.save({ timeout: 30000 });
+      logger.log(`Product created: ${product._id} ${product.name} ${product.price}`);
 
-  res.status(201).json(product);
+      res.status(201).json(product);
     } catch (error) {
       logger.error(error);
       res.status(500).json({ message: "Server error" });
@@ -44,17 +44,17 @@ class ProductController {
       if (!token) {
         return res.status(401).json({ message: "Unauthorized" });
       }
-  
+
       const { ids } = req.body;
       const products = await Product.find({ _id: { $in: ids } });
-  
+
       const orderId = uuid.v4(); // Generate a unique order ID
-      this.ordersMap.set(orderId, { 
-        status: "pending", 
-        products, 
+      this.ordersMap.set(orderId, {
+        status: "pending",
+        products,
         username: req.user.username
       });
-  
+
       await messageBroker.publishMessage("orders", {
         products,
         username: req.user.username,
@@ -71,14 +71,14 @@ class ProductController {
           logger.log("Updated order:", order);
         }
       });
-  
+
       // Long polling until order is completed
       let order = this.ordersMap.get(orderId);
       while (order.status !== 'completed') {
         await new Promise(resolve => setTimeout(resolve, 1000)); // wait for 1 second before checking status again
         order = this.ordersMap.get(orderId);
       }
-  
+
       // Once the order is marked as completed, return the complete order details
       return res.status(201).json(order);
     } catch (error) {
@@ -86,7 +86,6 @@ class ProductController {
       res.status(500).json({ message: "Server error" });
     }
   }
-  
 
   async getOrderStatus(req, res, next) {
     // support both :orderId and :id route params
@@ -114,7 +113,7 @@ class ProductController {
   }
 
 
-async getProductsID(req, res, next) {
+  async getProductsID(req, res, next) {
     try {
       const token = req.headers.authorization;
       if (!token) {

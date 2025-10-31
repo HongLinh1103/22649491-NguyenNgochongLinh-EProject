@@ -8,7 +8,7 @@
 
 ## 1. Tổng quan ngắn
 
-Ứng dụng E‑commerce mẫu minh họa kiến trúc microservices: người dùng đăng ký/đăng nhập (Auth), quản lý sản phẩm (Product), xử lý đơn hàng bất đồng bộ (Order) qua RabbitMQ, và API Gateway làm điểm vào chung.
+Đây là hệ thống thương mại điện tử nhỏ được thiết kế theo hướng microservice giải quyết các vấn đề về quản lý đơn hàng, quản lý sản phẩm, bảo mật người dùng
 
 ---
 
@@ -47,6 +47,18 @@
     │ :27017  │
     └─────────┘
 ```
+## 3. Ý nghĩa / chức năng từng dịch vụ
+
+- API Gateway: là bộ định tuyến làm điểm truy cập duy nhất cho client, chuyển tiếp request tới dịch vụ tương ứng.
+- Auth Service: xử lý đăng ký, đăng nhập, cấp và xác thực JWT cho các yêu cầu bảo mật.
+- Product Service: quản lý dữ liệu sản phẩm (tạo, liệt kê, lấy theo id), tạo yêu cầu mua hàng (order) và gửi thông tin sang hàng đợi (queue orders) để Order Service xử lý.
+- Order Service: Nhận các yêu cầu mua hàng từ queue “orders” (do Product Service gửi sang), xử lý đơn hàng và Gửi kết quả ngược lại qua queue “products”.
+
+## 4. Các dịch vụ giao tiếp như thế nào?
+
+- Client → API Gateway → (HTTP REST) → các service (Auth/Product/Order) cho các thao tác đồng bộ.
+- Product Service ↔ Order Service: giao tiếp bất đồng bộ qua RabbitMQ (publish/consume messages). 
+
 
 ## Chạy toàn bộ stack (Docker Compose)
 Từ thư mục project root (nơi có `docker-compose.yml`):
@@ -85,37 +97,4 @@ docker ps
 <img src="img/selectOrderId.png" alt="" />
 
 ---
-
-## 3. Trả lời 5 yêu cầu chính
-
-1) Hệ thống giải quyết vấn đề gì?
-
-- Đây là một ứng dụng thương mại điện tử mẫu (E‑commerce). Hệ thống cho phép người dùng đăng ký/đăng nhập, quản lý sản phẩm và thực hiện đặt hàng. Mục tiêu chính là minh họa kiến trúc microservices, xác thực bằng JWT và luồng xử lý đơn hàng bất đồng bộ qua RabbitMQ.
-
-2) Hệ thống có bao nhiêu dịch vụ?
-
-- Hệ thống gồm 4 dịch vụ chính:
-  - Auth Service (xác thực) — port 3000
-  - Product Service (quản lý sản phẩm) — port 3001
-  - Order Service (xử lý đơn hàng) — port 3002
-  - API Gateway (proxy / entry point) — port 3003
-
-3) Ý nghĩa / chức năng từng dịch vụ
-
-- Auth Service: xử lý đăng ký, đăng nhập, cấp và xác thực JWT cho các yêu cầu bảo mật.
-- Product Service: quản lý dữ liệu sản phẩm (tạo, liệt kê, lấy theo id), nhận yêu cầu mua và publish message lên queue orders.
-- Order Service: consume các message từ queue orders, xử lý đơn hàng và publish kết quả/ack lên queue products (hoặc lưu trạng thái đơn hàng).
-- API Gateway: làm điểm truy cập duy nhất cho client, chuyển tiếp request tới dịch vụ tương ứng (strip prefix và proxy).
-
-4) Các mẫu thiết kế được sử dụng
-
-- Microservices Architecture: tách dịch vụ theo trách nhiệm.
-- API Gateway Pattern: điểm vào duy nhất cho client.
-- Event-driven / Message Broker (RabbitMQ): giao tiếp bất đồng bộ giữa dịch vụ để xử lý đơn hàng.
-- JWT-based stateless authentication: bảo mật endpoint bằng token.
-
-5) Các dịch vụ giao tiếp như thế nào?
-
-- Client → API Gateway → (HTTP REST) → các service (Auth/Product/Order) cho các thao tác đồng bộ.
-- Product Service ↔ Order Service: giao tiếp bất đồng bộ qua RabbitMQ (publish/consume messages). MongoDB được dùng cho lưu trữ dữ liệu dịch vụ.
 
