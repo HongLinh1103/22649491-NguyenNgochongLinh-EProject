@@ -10,10 +10,11 @@ class ProductController {
 
   constructor() {
     this.createOrder = this.createOrder.bind(this);
-    this.getOrderStatus = this.getOrderStatus.bind(this);
+
     this.ordersMap = new Map();
 
   }
+
 
   async createProduct(req, res, next) {
     try {
@@ -87,15 +88,10 @@ class ProductController {
     }
   }
 
-  async getOrderStatus(req, res, next) {
-    // support both :orderId and :id route params
-    const orderId = req.params.orderId || req.params.id;
-    const order = this.ordersMap.get(orderId);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
-    }
-    return res.status(200).json(order);
-  }
+  //getOrderStatus
+
+
+
 
   async getProducts(req, res, next) {
     try {

@@ -54,7 +54,13 @@
 - Product Service: quản lý dữ liệu sản phẩm (tạo, liệt kê, lấy theo id), tạo yêu cầu mua hàng (order) và gửi thông tin sang hàng đợi (queue orders) để Order Service xử lý.
 - Order Service: Nhận các yêu cầu mua hàng từ queue “orders” (do Product Service gửi sang), xử lý đơn hàng và Gửi kết quả ngược lại qua queue “products”.
 
-## 4. Các dịch vụ giao tiếp như thế nào?
+## 4. Các mẫu thiết kế được sử dụng
+- Microservices Architecture
+- API Gateway Pattern
+- Message Queue Pattern (RabbitMQ): giao tiếp bất đồng bộ giữa dịch vụ để xử lý đơn hàng.
+- JWT Authentication Pattern: bảo mật endpoint bằng token.
+
+## 5. Các dịch vụ giao tiếp như thế nào?
 
 - Client → API Gateway → (HTTP REST) → các service (Auth/Product/Order) cho các thao tác đồng bộ.
 - Product Service ↔ Order Service: giao tiếp bất đồng bộ qua RabbitMQ (publish/consume messages). 
